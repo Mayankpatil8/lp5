@@ -1,0 +1,75 @@
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import accuracy_score
+from yellowbrick.classifier import ConfusionMatrix
+
+# Load Dataset
+column_names = [
+    'letter', 'x-box', 'y-box', 'width', 'height',
+    'onpix', 'x-bar', 'y-bar', 'x2bar', 'y2bar',
+    'xybar', 'x2ybr', 'xy2br', 'x-ege',
+    'xegvy', 'y-ege', 'yegvx'
+]
+
+dataset = pd.read_csv(
+    "https://archive.ics.uci.edu/ml/machine-learning-databases/letter-recognition/letter-recognition.data",
+    names=column_names
+)
+
+# Features and Labels
+X = dataset.iloc[:, 1:17]
+
+Y = dataset.iloc[:, 0].values.ravel()
+
+# Train Test Split
+X_train, X_validation, Y_train, Y_validation = train_test_split(
+    X,
+    Y,
+    test_size=0.2,
+    random_state=42
+)
+
+# Feature Scaling
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_validation = scaler.transform(X_validation)
+
+# Build MLP Model
+mlp = MLPClassifier(
+    hidden_layer_sizes=(100, 100),
+    max_iter=300,
+    activation='relu',
+    solver='adam',
+    random_state=42
+)
+
+print(mlp)
+
+# Train Model
+mlp.fit(X_train, Y_train)
+
+# Confusion Matrix
+classes = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+cm = ConfusionMatrix(
+    mlp,
+    classes=classes
+)
+
+cm.fit(X_train, Y_train)
+
+cm.score(X_validation, Y_validation)
+
+cm.show()
+
+# Prediction
+predictions = mlp.predict(X_validation)
+
+print(predictions)
+
+# Accuracy
+print("Accuracy:", accuracy_score(Y_validation, predictions))

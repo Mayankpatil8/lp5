@@ -1,0 +1,95 @@
+import tensorflow as tf
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+
+warnings.filterwarnings("ignore")
+
+# Load Dataset Manually
+data = pd.read_csv("HousingData.csv")
+
+# Remove Missing Values
+data = data.dropna()
+
+# Features and Target
+X = data.drop("MEDV", axis=1)
+y = data["MEDV"]
+
+# Split Dataset
+x_train, x_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+print(x_train.shape, y_train.shape)
+print(x_test.shape, y_test.shape)
+
+# Feature Scaling
+x_scaler = StandardScaler()
+y_scaler = StandardScaler()
+
+x_train_scaled = x_scaler.fit_transform(x_train)
+x_test_scaled = x_scaler.transform(x_test)
+
+y_train_scaled = y_scaler.fit_transform(y_train.values.reshape(-1, 1))
+y_test_scaled = y_scaler.transform(y_test.values.reshape(-1, 1))
+
+# Build Deep Neural Network Model
+model = tf.keras.models.Sequential([
+tf.keras.layers.Input(shape=(13,), name='input-layer'),
+tf.keras.layers.Dense(100, name='hidden-layer-2'),
+tf.keras.layers.BatchNormalization(name='hidden-layer-3'),
+tf.keras.layers.Dense(50, name='hidden-layer-4'),
+tf.keras.layers.Dense(1, name='output-layer')
+])
+
+# Show Model Summary
+model.summary()
+
+# Compile Model
+model.compile(
+    optimizer='adam',
+    loss='mse',
+    metrics=['mae']
+)
+
+# Train Model
+history = model.fit(
+    x_train_scaled,
+    y_train_scaled,
+    batch_size=32,
+    epochs=20,
+    validation_data=(x_test_scaled, y_test_scaled)
+)
+
+# Plot Training Graph
+pd.DataFrame(history.history).plot(figsize=(10,7))
+plt.title("Metrics Graph")
+plt.show()
+
+# Prediction
+y_pred_scaled = model.predict(x_test_scaled)
+
+# Inverse Transform
+y_pred = y_scaler.inverse_transform(y_pred_scaled)
+
+# Regression Plot
+sns.regplot(x=y_test, y=y_pred.flatten())
+plt.title("Regression Line for Predicted values")
+plt.show()
+
+# Evaluation Metrics
+def regression_metrics_display(y_test, y_pred):
+    print("MAE is", metrics.mean_absolute_error(y_test, y_pred))
+    print("MSE is", metrics.mean_squared_error(y_test, y_pred))
+    print("R2 score is", metrics.r2_score(y_test, y_pred))
+
+# Display Metrics
+regression_metrics_display(y_test, y_pred)

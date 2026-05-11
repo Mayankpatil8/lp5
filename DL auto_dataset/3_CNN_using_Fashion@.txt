@@ -1,0 +1,123 @@
+import tensorflow as tf
+from sklearn import metrics
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+
+warnings.filterwarnings("ignore")
+
+# Load Dataset
+(trainX, trainY), (testX, testY) = tf.keras.datasets.fashion_mnist.load_data()
+
+
+# Reshape and Normalize
+trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
+testX = testX.reshape((testX.shape[0], 28, 28, 1))
+
+trainY_cat = tf.keras.utils.to_categorical(trainY)
+testY_cat = tf.keras.utils.to_categorical(testY)
+
+train_norm = trainX.astype('float32') / 255.0
+test_norm = testX.astype('float32') / 255.0
+
+
+# Class Names
+class_names = [
+    'T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+    'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot'
+]
+
+# Show Images
+plt.figure(figsize=(10,10))
+
+
+for i in range(25):
+    plt.subplot(5,5,i+1)
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(False)
+    plt.imshow(trainX[i], cmap=plt.cm.binary)
+    plt.xlabel(class_names[trainY[i]])
+plt.show()
+
+# Build CNN Model
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Conv2D(
+        32,
+        kernel_size=(3,3),
+        input_shape=(28,28,1),
+        activation='relu'
+    ),
+    tf.keras.layers.AveragePooling2D(
+        pool_size=(2,2)
+    ),
+    tf.keras.layers.Conv2D(
+        64,
+        kernel_size=(3,3),
+        activation='relu',
+        padding='same'
+    ),
+    tf.keras.layers.AveragePooling2D(
+        pool_size=(2,2)
+    ),
+    tf.keras.layers.GlobalAveragePooling2D(),
+    tf.keras.layers.Dense(
+        len(class_names),
+        activation='softmax'
+    )
+])
+
+# Compile Model
+model.compile(
+    loss='categorical_crossentropy',
+    optimizer='adam',
+    metrics=['accuracy']
+)
+
+history = model.fit(
+    trainX,
+    trainY_cat,
+    epochs=2,
+    batch_size=128,
+    validation_data=(testX, testY_cat)
+)
+
+# Model Summary
+model.summary()
+
+# Metrics Graph
+pd.DataFrame(history.history).plot(figsize=(10,7))
+plt.title("Metrics Graph")
+plt.show()
+
+
+# Evaluate Model
+model.evaluate(test_norm, testY_cat)
+
+# Prediction
+predictions = model.predict(test_norm)
+
+predicted_labels = tf.argmax(predictions, axis=1)
+
+# Accuracy
+print(metrics.accuracy_score(testY, predicted_labels))
+
+# Classification Report
+print(metrics.classification_report(testY, predicted_labels))
+
+# Confusion Matrix
+cm = metrics.confusion_matrix(testY, predicted_labels)
+plt.figure(figsize=(10,7))
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt='d',
+    cmap='Blues',
+    xticklabels=class_names,
+    yticklabels=class_names
+)
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("Confusion Matrix")
+plt.show()

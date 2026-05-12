@@ -2,45 +2,71 @@
 #include <vector>
 #include <stack>
 #include <omp.h>
+
 using namespace std;
+
 int main() {
+
     int n;
+
+    // Number of vertices
     cout << "Enter number of vertices: ";
     cin >> n;
+
+    // Adjacency matrix
     vector<vector<int>> graph(n, vector<int>(n));
+
     cout << "Enter adjacency matrix:\n";
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
+
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
             cin >> graph[i][j];
         }
     }
-    int start;
-    cout << "Enter starting vertex: ";
-    cin >> start;  
-    if (start < 0 || start >= n) {
-        cout << "Invalid starting vertex" << endl;
-        return 0;
-    }
 
+    int start;
+
+    cout << "Enter starting vertex: ";
+    cin >> start;
+
+    // Visited array
     vector<bool> visited(n, false);
+
+    // Stack for DFS
     stack<int> st;
+
+    // Push start node
     st.push(start);
+
     cout << "DFS Traversal: ";
-    while (!st.empty()) {
-        int node;
-        // Safe pop from stack
-        #pragma omp critical 
-        {
-            node = st.top();
-            st.pop();
-        }
-        if (!visited[node]) {
+
+    while(!st.empty()) {
+
+        // Top node
+        int node = st.top();
+
+        // Remove node
+        st.pop();
+
+        // If not visited
+        if(!visited[node]) {
+
             visited[node] = true;
+
             cout << node << " ";
-            // Keep DFS logic correct (no parallel here)
-            for (int i = n - 1; i >= 0; i--) {
-                if (graph[node][i] == 1 && !visited[i]) {
-                    st.push(i);
+
+            // OpenMP Parallel Loop
+            #pragma omp parallel for
+            for(int i = n - 1; i >= 0; i--) {
+
+                // If connected and not visited
+                if(graph[node][i] == 1 && !visited[i]) {
+
+                    // Critical section
+                    #pragma omp critical
+                    {
+                        st.push(i);
+                    }
                 }
             }
         }
